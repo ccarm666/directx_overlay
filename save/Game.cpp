@@ -1,11 +1,8 @@
 #include "Game.h"
 extern  char nameOfBackground[200];
-extern int xWinWidth, yWinHeight;
 D3DXVECTOR3 sposition;
 #pragma comment(lib,"WS2_32")
 int debug = 1;
-bool paint_white_square = false;
-int number_offset;
 Game::Game()
 {
 	//Constructor
@@ -60,28 +57,17 @@ bool Game::Initialize(HWND hWnd)
 
 	backGround = new GameSprite();
 //	if (!backGround->Initialize(gDevice->device, "mycomm.png", 1600, 900)) return false;
-	white_square_sprite = new GameSprite();
-//	if (!backGround->Initialize(gDevice->device, nameOfBackground, 1600, 900)) return false;
-	if (!backGround->Initialize(gDevice->device, nameOfBackground, xWinWidth, yWinHeight)) return false;
+	if (!backGround->Initialize(gDevice->device, nameOfBackground, 1600, 900)) return false;
 	faces[1] = new GameSprite();
 	faces[2] = new GameSprite();
 	faces[3] = new GameSprite();
 	faces[4] = new GameSprite();
 	faces[5] = new GameSprite();
 	faces[6] = new GameSprite();
-	int face_width, face_height, square_width, square_height;
-	if(!(paint_white_square = get_dim_png("white_square.png", square_width, square_height))) 
-	  {
-		get_dim_png("face1.png", square_width, square_height);
-		if (!white_square_sprite->Initialize(gDevice->device, "face1.png", (int)(face_scale * square_width), (int)(face_scale * square_height)))  return false;
-	  } 
-	else
-	  {
-		if (!white_square_sprite->Initialize(gDevice->device, "white_square.png", (int)(face_scale * square_width), (int)(face_scale * square_height)))  return false;
-	  }
+	int face_width, face_height;
 	get_dim_png("face1.png", face_width, face_height);
 	if (!faces[1]->Initialize(gDevice->device, "face1.png", (int)(face_scale * face_width), (int)(face_scale * face_height)))  return false;
-	number_offset = (int)((face_scale * face_width)/2); // help position numbers
+
 	get_dim_png("face2.png", face_width, face_height);
 	if (!faces[2]->Initialize(gDevice->device, "face2.png", (int)(face_scale * face_width), (int)(face_scale * face_height)))  return false;
 
@@ -96,7 +82,7 @@ bool Game::Initialize(HWND hWnd)
 
 	get_dim_png("face6.png", face_width, face_height);
 	if (!faces[6]->Initialize(gDevice->device, "face6.png", (int)(face_scale * face_width), (int)(face_scale * face_height)))  return false;
-
+	
 	digit[0] = new GameSprite();
 	digit[1] = new GameSprite();
 	digit[2] = new GameSprite();
@@ -127,10 +113,8 @@ bool Game::Initialize(HWND hWnd)
 	}
 
 
-	white_square_obj = new GameplayObject(0, 0, 0.0f, 0.0f, 0.0f);
-	if (!white_square_obj->Initialize(gDevice->device, white_square_sprite,square_width , square_height)) return false;
-	white_square_obj->SetDrawStatus(false);
-	white_square_obj->SetPosition(1450,750);
+
+
 	for (i = 1; i < MAX_NUMBER_OF_BUTTONS + 1; i++) {
 		//		button_faces[i] = new GameplayObject(0, 0, 0.0f, 0.0f, 0.0f);
 		//		if (!button_faces[i]->Initialize(gDevice->device, faces[1], 58, 86)) return false;
@@ -196,7 +180,7 @@ void Game::Run()
 	//	if (gameTime->totalGameTime > 8.0f)
 	//		button_faces[0]->SetDrawStatus(false);
 	Update(gameTime->elapsedTime);
-//	D3DRASTER_STATUS rStatus;
+	D3DRASTER_STATUS rStatus;
 //	direct3d->GetRasterStatus(0, &rStatus);
 
 //	while (rStatus.InVBlank)
@@ -222,9 +206,8 @@ void Game::Reset_button_matrix()
 void Game::Update(float gameTime)
 {
 	int i,len;
-	char temp_buff[2025];
+	char temp_buff[1025];
 	//Update our sprites and other game logic
-	white_square_obj->Update(gameTime);
 	for (i = 1; i < MAX_NUMBER_OF_BUTTONS + 1; i++) {
 		if (tobii_button_matrix[i].button_face) tobii_button_matrix[i].button_face->Update(gameTime);
 		if (tobii_button_matrix[i].button_face) tobii_button_matrix[i].button_num_1->Update(gameTime);
@@ -245,30 +228,25 @@ void Game::Update(float gameTime)
 void Game::Draw(float gTime)
 {
 	int i;
-	bool some_face_drawn;
 	//Simple RGB value for the background so use XRGB instead of ARGB.
 	gDevice->Clear(D3DCOLOR_XRGB(0, 100, 100));
 	gDevice->Begin();
 	//master_clock = gameTime->totalGameTime; // update masterclock
-	some_face_drawn = false;
+
 	if (tobii_menu) tobii_menu->Draw(gTime);
 	for (i = 1; i < MAX_NUMBER_OF_BUTTONS + 1; i++) {
 		//		tobii_button_matrix[i].button_face->drawIt = true;
-		if ((tobii_button_matrix[i].button_face->drawIt && tobii_button_matrix[i].valid_index)) {
+		
+		if ((tobii_button_matrix[i].button_face->drawIt && tobii_button_matrix[i].valid_index) && (tobii_button_matrix[i].ssvep_period > 0.0) && 
+			(fmod(gameTime->totalGameTime - tobii_button_matrix[i].face_first_on, tobii_button_matrix[i].ssvep_period) > 
+			(0.5*tobii_button_matrix[i].ssvep_period))) tobii_button_matrix[i].button_face->Draw(gTime);
+		else if ((tobii_button_matrix[i].button_face->drawIt && tobii_button_matrix[i].valid_index) && (tobii_button_matrix[i].ssvep_period == 0.0))
 			tobii_button_matrix[i].button_face->Draw(gTime);
-			some_face_drawn = true;
-		}
-//		if ((tobii_button_matrix[i].button_face->drawIt && tobii_button_matrix[i].valid_index) && (tobii_button_matrix[i].ssvep_period > 0.0) && 
-//			(fmod(gameTime->totalGameTime - tobii_button_matrix[i].face_first_on, tobii_button_matrix[i].ssvep_period) > 
-//			(0.5*tobii_button_matrix[i].ssvep_period))) tobii_button_matrix[i].button_face->Draw(gTime);
-//		else if ((tobii_button_matrix[i].button_face->drawIt && tobii_button_matrix[i].valid_index) && (tobii_button_matrix[i].ssvep_period == 0.0))
-//			tobii_button_matrix[i].button_face->Draw(gTime);
 		if (((gameTime->totalGameTime - tobii_button_matrix[i].number_first_on) < tobii_button_matrix[i].number_timer) && tobii_button_matrix[i].valid_index){
 			tobii_button_matrix[i].button_num_1->Draw(gTime);
 			tobii_button_matrix[i].button_num_2->Draw(gTime);
 		}
 	}
-	if (some_face_drawn && paint_white_square) white_square_obj->Draw(gTime);
 	gameTime->Update();
 	gDevice->End();
 	gDevice->Present();
@@ -282,7 +260,6 @@ Game::~Game()
 		if (tobii_button_matrix[i].button_face) { delete tobii_button_matrix[i].button_num_1; tobii_button_matrix[i].button_num_1 = 0; }
 		if (tobii_button_matrix[i].button_face) { delete tobii_button_matrix[i].button_num_2; tobii_button_matrix[i].button_num_2 = 0; }
 	}
-	if (white_square_obj) { delete white_square_obj; white_square_obj = 0; }
 	if (tobii_menu) { delete tobii_menu; tobii_menu = 0; }
 	if (gDevice) { delete gDevice; gDevice = 0; }
 	if (gameTime) { delete gameTime; gameTime = 0; }
@@ -349,7 +326,7 @@ void Game::test_tobii_button_matrix()
 	//	tobii_button_matrix[k + 1].number_timer = 2.0f;
 	//	tobii_button_matrix[k + 1].number_first_on = -1.0f;
 		setDigits(k + 1);
-	//		my_printf("putting in test data for matrix_id=%d face_id=%d at %d  first_on is %f send_msg_to_netv\(\"Alter_coordxy,%d,%f,%f\"\) \n", tobii_button_matrix[k + 1].id, tobii_button_matrix[k + 1].curr_face_num, tobii_button_matrix[k + 1].loc_x, tobii_button_matrix[k + 1].loc_y, k + 1, (i - 1)*xc, (j - 1)*yc);
+		my_printf("putting in test data for matrix_id=%d face_id=%d at %d  first_on is %f send_msg_to_netv\(\"Alter_coordxy,%d,%f,%f\"\) \n", tobii_button_matrix[k + 1].id, tobii_button_matrix[k + 1].curr_face_num, tobii_button_matrix[k + 1].loc_x, tobii_button_matrix[k + 1].loc_y, k + 1, (i - 1)*xc, (j - 1)*yc);
 	}
 	// exit(0);
 }
@@ -368,12 +345,11 @@ void Game::udp_debug_print(char* msg)
 		printf("socket error\n");
 	}
 }
-
-bool Game::get_dim_png(char* file_name, int &pngwidth, int &pngheight)
+bool Game::get_dim_png(char* file_name, int &pngwidth, int &pngheight) 
 {
 	std::ifstream in(file_name);
 	unsigned int width, height;
-	if(!in.seekg(16)) return false;
+	in.seekg(16);
 	in.read((char *)&width, 4);
 	in.read((char *)&height, 4);
 	pngwidth = ntohl(width);
@@ -416,7 +392,7 @@ void Game::parse_udp_msg(char *udp_buff, int len)
 
 	int j,i;
 	int rnd_face_num;		// random face number   
-	char temp_space[2025];
+	char temp_space[1025];
 	int xsize, ysize;
 	udp_buff[len] = '\0';
 	my_printf("Received the following:\n");
@@ -724,9 +700,9 @@ void Game::Clear() {
 void Game::setDigits(int buttonId) {
 	tobii_button_matrix[buttonId].digit1_id = (buttonId) / 10;
 	tobii_button_matrix[buttonId].digit2_id = (buttonId)-(((buttonId) / 10) * 10);
-	tobii_button_matrix[buttonId].button_num_1->SetPosition(tobii_button_matrix[buttonId].loc_x+number_offset, tobii_button_matrix[buttonId].loc_y+number_offset);
+	tobii_button_matrix[buttonId].button_num_1->SetPosition(tobii_button_matrix[buttonId].loc_x, tobii_button_matrix[buttonId].loc_y);
 	tobii_button_matrix[buttonId].button_num_1->SetSprite(digit[tobii_button_matrix[buttonId].digit1_id]);
-	tobii_button_matrix[buttonId].button_num_2->SetPosition(tobii_button_matrix[buttonId].loc_x + number_offset + 10, tobii_button_matrix[buttonId].loc_y + number_offset);
+	tobii_button_matrix[buttonId].button_num_2->SetPosition(tobii_button_matrix[buttonId].loc_x + 10, tobii_button_matrix[buttonId].loc_y);
 	tobii_button_matrix[buttonId].button_num_2->SetSprite(digit[tobii_button_matrix[buttonId].digit2_id]);
 	tobii_button_matrix[buttonId].number_timer = 4.0f;
 	tobii_button_matrix[buttonId].number_first_on = gameTime->totalGameTime;
@@ -739,12 +715,8 @@ void Game::udp_debug_print_debug(char* msg)
 		buffer[i] = '\0';
 	int len = sizeof(serverInfo_debug);
 	_snprintf_s(buffer, sizeof(buffer), "%s\n", msg);
-	i = 0;
-	for (i = 0; buffer[i] != '\0'; i++)
-	{
-	}
 	//	OutputDebugString(buffer);
-	if (sendto(socketC_debug, buffer, i, 0, (sockaddr*)&serverInfo_debug, len) == SOCKET_ERROR) {
+	if (sendto(socketC_debug, buffer, 1024, 0, (sockaddr*)&serverInfo_debug, len) == SOCKET_ERROR) {
 		printf("socket error\n");
 	}
 }

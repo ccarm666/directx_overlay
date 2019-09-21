@@ -24,7 +24,6 @@ bool MyHandleKeyEvent(MSG *msg);
 
 Game *game; 
 char nameOfBackground[200];
-int xWinWidth, yWinHeight;
 //WinMain function, set up window and message loop.
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
@@ -32,6 +31,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	LPSTR *szArgList;
 	int argCount,i;
 	szArgList = CommandLineToArgvA(lpCmdLine, &argCount);
+	int xWinWidth, yWinHeight;
 	double f_scale = 1.0;
 	xWinWidth = 1600;
 	yWinHeight = 900;
@@ -49,8 +49,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		xWinWidth = atoi(szArgList[1]);
 		yWinHeight = atoi(szArgList[2]);
 //		f_scale = atof(szArgList[3]);
-
-//		MessageBox(NULL, szArgList[1],"3 args", MB_OK);
+//		MessageBox(NULL, (Game::nameOfBackground, "3 args", MB_OK);
 	}
 	if (argCount == 4) {
 		strcpy_s(nameOfBackground, 199, szArgList[0]);

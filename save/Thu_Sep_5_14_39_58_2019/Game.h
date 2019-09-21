@@ -56,7 +56,7 @@ public:
 	void Game::Reset_button_matrix();
 	double face_scale;
 	float offset_x = 0.0;
-	float offset_y = 0.0; // help center faces
+	float offset_y = 30.0; // help center faces
 	struct sockaddr_in serverInfo_debug;
 	SOCKET socketC_debug;
 	void Game::udp_debug_print_debug(char* msg);
